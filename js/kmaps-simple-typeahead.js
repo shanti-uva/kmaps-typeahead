@@ -9,7 +9,7 @@
       domain: 'places',
       autocomplete_field: 'name_autocomplete',
       search_fields: ['name_tibt'],
-      max_terms: 150,
+      max_terms: 500,
       min_chars: 1,
       pager: 'off', // or 'on'
       prefetch_facets: 'off',
@@ -392,7 +392,7 @@
             },
             {
               name: settings.domain,
-              limit: 999, // apparently needs to be doubled to accommodate both prefetched and remote terms
+              limit: parseInt(settings.max_terms) * 2, // apparently needs to be doubled to accommodate both prefetched and remote terms
               display: 'value',
               templates: prefetch_templates,
               source: function (q, sync, async) {
