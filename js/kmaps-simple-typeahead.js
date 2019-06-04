@@ -108,11 +108,21 @@
             }
             val = settings.case_sensitive ? val : val.toLowerCase();
             if (val) {
-              var solr_query = settings.autocomplete_field + ':' + val.replace(/[\s\u0f0b\u0f0d]+/g, '\\ ');
-              if(settings.search_fields){
-                solr_query = settings.search_fields.reduce(function(full_query,search_field){
-                  return full_query+" OR "+search_field+":"+val.replace(/[\s]+/g, '\\ ');
-                },solr_query);
+              var solr_query;
+              // If the entered value is a number, search on ID, e.g. places-1234*
+              if (!isNaN(val.replace('*', ''))) {
+                val = val.replace(' *', ''); // if they type a space after the number, they want an exact match, remove asterisk
+                solr_query = 'uid:' + settings.domain + '-' + val;
+              } else {
+                // Otherwise search in the autocomplete field.
+                val = val.replace(/[\s\u0f0b\u0f0d]+/g, '\\ ')
+                          .replace(/[\'\"]/g,'');  // Use quotes around numbers to search for numbers in headers. Remove such quotes here
+                solr_query = settings.autocomplete_field + ':' + val;
+                if (settings.search_fields) {
+                  solr_query = settings.search_fields.reduce(function (full_query, search_field) {
+                    return full_query + " OR " + search_field + ":" + val.replace(/[\s]+/g, '\\ ');
+                  }, solr_query);
+                }
               }
               extras = {
                 'q': solr_query,
