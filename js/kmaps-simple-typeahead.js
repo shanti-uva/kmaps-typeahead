@@ -108,11 +108,21 @@
             }
             val = settings.case_sensitive ? val : val.toLowerCase();
             if (val) {
-              var solr_query = settings.autocomplete_field + ':' + val.replace(/[\s\u0f0b\u0f0d]+/g, '\\ ');
-              if(settings.search_fields){
-                solr_query = settings.search_fields.reduce(function(full_query,search_field){
-                  return full_query+" OR "+search_field+":"+val.replace(/[\s]+/g, '\\ ');
-                },solr_query);
+              var solr_query;
+              // If the entered value is a number, search on ID, e.g. places-1234*
+              if (!isNaN(val.replace('*', ''))) {
+                val = val.replace(' *', ''); // if they type a space after the number, they want an exact match, remove asterisk
+                solr_query = 'uid:' + settings.domain + '-' + val;
+              } else {
+                // Otherwise search in the autocomplete field.
+                val = val.replace(/[\s\u0f0b\u0f0d]+/g, '\\ ')
+                          .replace(/[\'\"]/g,'');  // Use quotes around numbers to search for numbers in headers. Remove such quotes here
+                solr_query = settings.autocomplete_field + ':' + val;
+                if (settings.search_fields) {
+                  solr_query = settings.search_fields.reduce(function (full_query, search_field) {
+                    return full_query + " OR " + search_field + ":" + val.replace(/[\s]+/g, '\\ ');
+                  }, solr_query);
+                }
               }
               extras = {
                 'q': solr_query,
@@ -295,12 +305,26 @@
           var cl = [];
           if (data.selected) cl.push('kmaps-tt-selected');
           var display_path = data.doc.ancestors ? data.doc.ancestors.join("/") : "";
-          if (settings.domain == 'places') { // show feature types
+          if (settings.domain == 'subjects') { // show hierarchy
+            cl.push('kmaps-subject-result');
+            return '<div data-id="' + data.id + '" data-path="' + display_path + '" class="' + cl.join(' ') + '">' +
+                '<span class="kmaps-term typeahead-popover" data-toggle="popover" data-content="' +
+                display_path + '">' + data.value + '</span>' +
+                '<span class="kmaps-id">('  + settings.domain + '-' + data.id + ')</span>' +
+                '</div>';
+          } else if (settings.domain == 'places') { // show feature types
             cl.push('kmaps-place-result');
             var feature_types = data.doc.feature_types ? data.doc.feature_types.join('/') : '';
-            return '<div data-id="' + settings.domain+"-"+data.id + '" data-path="' + display_path + '" class="' + cl.join(' ') + '"><span class="kmaps-place-name">' + data.value + '</span> <span class="kmaps-feature-type">' + feature_types + '</span>' + '</div>';
-          } else { // show hierarchy
-            return '<div data-id="' + settings.domain+"-"+data.id + '" data-path="' + display_path + '" class="' + cl.join(' ') + '"><span class="kmaps-term">' + data.value + '</span>' + '</div>';
+            return '<div data-id="' + data.id + '" data-path="' + display_path + '" class="' + cl.join(' ') + '">' +
+                '<span class="kmaps-place-name typeahead-popover" data-toggle="popover" data-content="' +
+                display_path +
+                '">' + data.value + '</span> ' +
+                '<span class="kmaps-feature-type">' + feature_types + '</span>' +
+                '<span class="kmaps-id">' + settings.domain + '-' + data.id + '</span>' +
+                '</div>';
+          } else {
+            return '<div data-id="' + data.id + '" class="' + cl.join(' ') + '"><span class="kmaps-term">' + data.value + '</span> ' +
+                '<span class="kmaps-count">(' + data.count + ')</span>' + '</div>';
           }
         }
       };
@@ -340,7 +364,7 @@
           if (data.selected) cl.push('kmaps-tt-selected');
           if (data.count == 0) cl.push('kmaps-tt-zero-facet');
           return '<div data-id="' + data.id + '" class="' + cl.join(' ') + '"><span class="kmaps-term">' + data.value + '</span> ' +
-            '<span class="kmaps-count">(' + data.count + ')</span>' + '</div>';
+              '<span class="kmaps-count">(' + data.count + ')</span>' + '</div>';
         }
       };
 
