@@ -120,7 +120,7 @@
                 solr_query = settings.autocomplete_field + ':' + val;
                 if (settings.search_fields) {
                   solr_query = settings.search_fields.reduce(function (full_query, search_field) {
-                    return full_query + " OR " + search_field + ":" + val.replace(/[\s]+/g, '\\ ');
+                    return full_query + " OR " + search_field + ":" + val.replace(/[\s]+/g, '\\%20');
                   }, solr_query);
                 }
               }
